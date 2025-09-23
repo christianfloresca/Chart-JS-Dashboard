@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full-Page Charts</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="dashboardstyles.css">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .full-page-container {
+            height: 100%;
+            display: flex;
+        }
+
+        .full-page-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: none;
+        }
+
+        .card-body {
+            flex: 1;
+            display: flex;
+            padding: 1.5;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+        }
+
+        canvas {
+            width: 80%; /* Adjust width as needed */
+            height: 80%; /* Adjust height as needed */
+            display: block;
+        }
+
+        .half-card {
+            flex: 0.5;
+        }
+    </style>
+</head>
+
+<div class="container">
+    <h1 class="mb-4">StatTracker User Information Dashboard</h1>
+
+<body>
+    <div class="full-page-container">
+        <div class="full-page-col" style="flex: 1;">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="clicksChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="full-page-col" style="flex: 1;">
+            <div class="card half-card">
+                <div class="card-body">
+                    <canvas id="accountsChart"></canvas>
+                </div>
+            </div>
+            <div class="card half-card">
+                <div class="card-body">
+                    <canvas id="premiumAccountsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="full-page-col" style="flex: 1;">
+            <div class="card half-card">
+                <div class="card-body">
+                    <canvas id="datasetTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="card half-card">
+                <div class="card-body">
+                    <canvas id="updatesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <script>
+
+        // userTimeChart
+        var ctx = document.getElementById('clicksChart').getContext('2d');
+        var clicksChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Individual User Times',
+                    data: [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function fetchDataAndUpdateChart() {
+            Papa.parse('https://raw.githubusercontent.com/christianfloresca/Chart-JS-Dashboard/refs/heads/main/CIS3110%20Project%202%20UserClicks.csv', {
+                download: true,
+                header: true,
+                complete: function (results) {
+                    // Assuming the CSV has 'UserID' and 'TotalTime' columns
+                    var labels = results.data.map(row => row.UserID);
+                    var data = results.data.map(row => row.TotalTime);
+
+                    clicksChart.data.labels = labels;
+                    clicksChart.data.datasets[0].data = data;
+                    clicksChart.update();
+                },
+                error: function (error) {
+                    console.error('Error fetching or parsing data:', error);
+                }
+            });
+        }
+
+        fetchDataAndUpdateChart();
+
+        // accountsChart
+        var ctxAccounts = document.getElementById('accountsChart').getContext('2d');
+        var accountsChart = new Chart(ctxAccounts, {
+            type: 'bar',
+            data: {
+                labels: ['Yes', 'No'],
+                datasets: [{
+                    label: 'Account Status',
+                    data: [0, 0],
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0  // Ensure whole number ticks
+                        }
+                    }
+                },
+                plugins: {
+                    datalabels: {
+                        display: false, // remove data labels
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: true,
+            }
+        });
+
+        function fetchAccountsDataAndUpdateChart() {
+            const csvUrl = 'https://raw.githubusercontent.com/christianfloresca/Chart-JS-Dashboard/refs/heads/main/CIS3110%20Project%202%20Accounts.csv'; // Updated URL
+
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true, // Important: the CSV DOES have a header
+                complete: function (results) {
+                    let yesCount = 0;
+                    let noCount = 0;
+
+                    results.data.forEach(row => {
+                        if (row.AccountCreated === 'Yes') {
+                            yesCount++;
+                        } else if (row.AccountCreated === 'No') {
+                            noCount++;
+                        }
+                    });
+                    accountsChart.data.datasets[0].data = [yesCount, noCount];
+                    const maxValue = Math.max(yesCount, noCount);
+                    accountsChart.options.scales.y.max = maxValue + 1;
+                    accountsChart.update();
+                },
+                error: function (error) {
+                    console.error('Error fetching or parsing accounts data:', error);
+                }
+            });
+        }
+
+        fetchAccountsDataAndUpdateChart();
+
+        // premiumAccountsChart
+
+        var ctxPremiumAccounts = document.getElementById('premiumAccountsChart').getContext('2d');
+        var premiumAccountsChart = new Chart(ctxPremiumAccounts, {
+            type: 'pie',
+            data: {
+                labels: ['Yes', 'No'],
+                datasets: [{
+                    label: 'Premium Account Status',
+                    data: [0, 0],
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0  // Ensure whole number ticks
+                        }
+                    }
+                },
+                plugins: {
+                    datalabels: {
+                        display: false, // remove data labels
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: true,
+            }
+        });
+
+        function fetchPremiumAccountsDataAndUpdateChart() {
+            const csvUrl = 'https://raw.githubusercontent.com/christianfloresca/Chart-JS-Dashboard/refs/heads/main/CIS3110%20PremiumAccounts.csv'; // Updated URL
+
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true, // Important: the CSV DOES have a header
+                complete: function (results) {
+                    let yesCount = 0;
+                    let noCount = 0;
+
+                    results.data.forEach(row => {
+                        if (row.PremiumAccount === 'Yes') {
+                            yesCount++;
+                        } else if (row.PremiumAccount === 'No') {
+                            noCount++;
+                        }
+                    });
+                    premiumAccountsChart.data.datasets[0].data = [yesCount, noCount];
+                    const maxValue = Math.max(yesCount, noCount);
+                    premiumAccountsChart.options.scales.y.max = maxValue + 1;
+                    premiumAccountsChart.update();
+                },
+                error: function (error) {
+                    console.error('Error fetching or parsing accounts data:', error);
+                }
+            });
+        }
+
+        fetchPremiumAccountsDataAndUpdateChart();
+
+        // dataset type chart
+
+        var ctxDatasetTypes = document.getElementById('datasetTypeChart').getContext('2d');
+        var datasetTypeChart = new Chart(ctxDatasetTypes, {
+            type: 'doughnut',
+            data: {
+                labels: ['PlayerStats', 'TeamRankings', 'MatchResults', 'UserActivity', 'UserProfiles', 'LeagueStandings', 'FantasyTeams', 'GameSchedules', 'InjuryReports', 'HistoricalData'],
+                datasets: [{
+                    label: 'Data Set Types',
+                    data: [],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',   // Red
+                        'rgba(54, 162, 235, 0.7)',  // Blue
+                        'rgba(255, 206, 86, 0.7)', // Yellow
+                        'rgba(75, 192, 192, 0.7)',  // Green
+                        'rgba(153, 102, 255, 0.7)', // Purple
+                        'rgba(255, 159, 64, 0.7)',  // Orange
+                        'rgba(255, 0, 0, 0.7)',      // Bright Red
+                        'rgba(0, 255, 0, 0.7)',      // Bright Green
+                        'rgba(0, 0, 255, 0.7)',      // Bright Blue
+                        'rgba(128, 128, 128, 0.7)'  // Gray
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(255, 0, 0, 1)',
+                        'rgba(0, 255, 0, 1)',
+                        'rgba(0, 0, 255, 1)',
+                        'rgba(128, 128, 128, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    datalabels: {
+                        display: false,  // Hides labels
+                    }
+                }
+            }
+        });
+
+        function fetchDatasetTypesChart() {
+            const csvUrl = 'https://raw.githubusercontent.com/christianfloresca/Chart-JS-Dashboard/refs/heads/main/CIS3110%20Project%202%20DataSet%20Types.csv'; // Updated URL
+
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true, // The CSV has a header row
+                complete: function (results) {
+                    const dataSetCounts = {};
+
+                    // Initialize counts object
+                    results.data.forEach(row => {
+                        const dataSetType = row.DataSetType; // Access by column name
+                        if (dataSetType) {
+                            dataSetCounts[dataSetType] = (dataSetCounts[dataSetType] || 0) + 1;
+                        }
+                    });
+
+                    // Prepare data for Chart.js
+                    const labels = Object.keys(dataSetCounts);
+                    const data = Object.values(dataSetCounts);
+
+
+                    // Update the chart's data
+                    datasetTypeChart.data.labels = labels;
+                    datasetTypeChart.data.datasets[0].data = data;
+                    datasetTypeChart.update();
+                },
+                error: function (error) {
+                    console.error('Error fetching or parsing CSV data:', error);
+                }
+            });
+        }
+
+        fetchDatasetTypesChart();
+
+        var ctxUpdates = document.getElementById('updatesChart').getContext('2d');
+        var updatesChart = new Chart(ctxUpdates, {
+            type: 'line',
+                data: {
+                        labels: [], // Labels will be filled from the CSV
+                        datasets: [
+                    {
+                        label: 'UserActivity',
+                        data: [],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'PlayerStats',
+                        data: [],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'TeamRankings',
+                        data: [],
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'MatchResults',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function fetchUpdatesDataAndUpdateChart() {
+            Papa.parse('https://raw.githubusercontent.com/christianfloresca/Chart-JS-Dashboard/refs/heads/main/CIS3110%20Project%202%20Updates%20and%20Changes.csv', {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    var labels = [];
+                    var userActivityData = [];
+                    var playerStatsData = [];
+                    var teamRankingsData = [];
+                    var matchResultsData = [];
+
+                    results.data.forEach(function(row) {
+                        if (row.Date) { // Check if 'Date' exists
+                            labels.push(row.Date);
+                            userActivityData.push(row.DatasetName === 'UserActivity' ? parseInt(row.Updates) || 0 : 0);
+                            playerStatsData.push(row.DatasetName === 'PlayerStats' ? parseInt(row.Updates) || 0 : 0);
+                            teamRankingsData.push(row.DatasetName === 'TeamRankings' ? parseInt(row.Updates) || 0 : 0);
+                            matchResultsData.push(row.DatasetName === 'MatchResults' ? parseInt(row.Updates) || 0 : 0);
+                        }
+                    });
+
+                    updatesChart.data.labels = labels;
+                    updatesChart.data.datasets[0].data = userActivityData;
+                    updatesChart.data.datasets[1].data = playerStatsData;
+                    updatesChart.data.datasets[2].data = teamRankingsData;
+                    updatesChart.data.datasets[3].data = matchResultsData;
+                    updatesChart.update();
+                },
+                error: function(error) {
+                    console.error('Error fetching or parsing updates data:', error);
+                }
+            });
+        }
+
+        fetchUpdatesDataAndUpdateChart();
+        
+    </script>
+
+</body>
+
+</html>
